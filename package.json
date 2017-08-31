@@ -1,0 +1,38 @@
+{
+  "name": "custom-docs",
+  "version": "0.9.0-preview",
+  "description": "Documentation & demo viewer for es6 modules",
+  "main": "custom-docs",
+  "repository": "https://github.com/vandeurenglenn/custom-docs",
+  "author": "Glenn Vandeuren <vandeurenglenn@gmail.com>",
+  "license": "MIT",
+  "flat": true,
+  "dependencies": {
+    "custom-app-layout": "next",
+    "custom-header": "next",
+    "custom-pages": "^0.9.0-preview"
+  },
+  "resolutions": {
+    "backed": "0.9.0-preview.3"
+  },
+  "backed": {
+    "bundles": [
+      {
+        "src": "src/custom-docs.js",
+        "dest": "custom-docs.js",
+        "format": "es",
+        "plugins": {
+          "babel": {
+            "presets": [
+              "es2016"
+            ]
+          }
+        }
+      }
+    ],
+    "demo": "demo"
+  },
+  "devDependencies": {
+    "babel-preset-es2016": "^6.24.1"
+  }
+}
