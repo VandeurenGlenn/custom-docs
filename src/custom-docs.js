@@ -1,9 +1,9 @@
 'use strict';
-import LitMixin from './../node_modules/backed/mixins/lit-mixin.min.js';
-import PropertyMixin from './../node_modules/backed/mixins/property-mixin.min.js';
-import './../node_modules/custom-app-layout/custom-app-layout.js';
-import './../node_modules/custom-header/custom-header.js';
-import './../node_modules/custom-pages/custom-pages.js';
+import LitMixin from './../../backed/mixins/lit-mixin.min.js';
+import PropertyMixin from './../../backed/mixins/property-mixin.min.js';
+import './../../custom-app-layout/src/custom-app-layout.js';
+import './../../custom-header/custom-header.js';
+import './../../custom-pages/custom-pages.js';
 
 class CustomDocs extends LitMixin(PropertyMixin(HTMLElement)) {
   get pages() {

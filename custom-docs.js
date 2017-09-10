@@ -1,3 +1,6 @@
+var customDocs = (function () {
+'use strict';
+
 function html$1(e, ...t) {
   let s = templates.get(e);return void 0 === s && (s = new Template(e), templates.set(e, s)), new TemplateResult(s, t);
 }function render(e, t) {
@@ -130,406 +133,7 @@ window.Backed = window.Backed || {}, window.Backed.PropertyStore = window.Backed
   }
 };
 
-/**
- * @license
- * Copyright (c) 2017 The Polymer Project Authors. All rights reserved.
- * This code may only be used under the BSD style license found at
- * http://polymer.github.io/LICENSE.txt
- * The complete set of authors may be found at
- * http://polymer.github.io/AUTHORS.txt
- * The complete set of contributors may be found at
- * http://polymer.github.io/CONTRIBUTORS.txt
- * Code distributed by Google as part of the polymer project is also
- * subject to an additional IP rights grant found at
- * http://polymer.github.io/PATENTS.txt
- */
-const templates$1 = new Map();
-function html$2(strings, ...values) {
-    let template = templates$1.get(strings);
-    if (template === undefined) {
-        template = new Template$1(strings);
-        templates$1.set(strings, template);
-    }
-    return new TemplateResult$1(template, values);
-}
-class TemplateResult$1 {
-    constructor(template, values) {
-        this.template = template;
-        this.values = values;
-    }
-}
-function render$2(result, container) {
-    let instance = container.__templateInstance;
-    if (instance !== undefined && instance.template === result.template && instance instanceof TemplateInstance$1) {
-        instance.update(result.values);
-        return;
-    }
-    instance = new TemplateInstance$1(result.template);
-    container.__templateInstance = instance;
-    const fragment = instance._clone();
-    instance.update(result.values);
-    while (container.firstChild) {
-        container.removeChild(container.firstChild);
-    }
-    container.appendChild(fragment);
-}
-const exprMarker$1 = '{{}}';
-class TemplatePart$1 {
-    constructor(type, index, name, rawName, strings) {
-        this.type = type;
-        this.index = index;
-        this.name = name;
-        this.rawName = rawName;
-        this.strings = strings;
-    }
-}
-class Template$1 {
-    constructor(strings) {
-        this.parts = [];
-        this._strings = strings;
-        this._parse();
-    }
-    _parse() {
-        this.element = document.createElement('template');
-        this.element.innerHTML = this._getTemplateHtml(this._strings);
-        const walker = document.createTreeWalker(this.element.content, NodeFilter.SHOW_ELEMENT | NodeFilter.SHOW_TEXT);
-        let index = -1;
-        let partIndex = 0;
-        const nodesToRemove = [];
-        const attributesToRemove = [];
-        while (walker.nextNode()) {
-            index++;
-            const node = walker.currentNode;
-            if (node.nodeType === Node.ELEMENT_NODE) {
-                const attributes = node.attributes;
-                for (let i = 0; i < attributes.length; i++) {
-                    const attribute = attributes.item(i);
-                    const value = attribute.value;
-                    const strings = value.split(exprMarker$1);
-                    if (strings.length > 1) {
-                        const attributeString = this._strings[partIndex];
-                        const rawNameString = attributeString.substring(0, attributeString.length - strings[0].length);
-                        const match = rawNameString.match(/((?:\w|[.\-_$])+)=["']?$/);
-                        const rawName = match[1];
-                        this.parts.push(new TemplatePart$1('attribute', index, attribute.name, rawName, strings));
-                        attributesToRemove.push(attribute);
-                        partIndex += strings.length - 1;
-                    }
-                }
-            } else if (node.nodeType === Node.TEXT_NODE) {
-                const strings = node.nodeValue.split(exprMarker$1);
-                if (strings.length > 1) {
-                    partIndex += strings.length - 1;
-                    for (let i = 0; i < strings.length; i++) {
-                        const string = strings[i];
-                        const literalNode = new Text(string);
-                        node.parentNode.insertBefore(literalNode, node);
-                        index++;
-                        if (i < strings.length - 1) {
-                            node.parentNode.insertBefore(new Text(), node);
-                            node.parentNode.insertBefore(new Text(), node);
-                            this.parts.push(new TemplatePart$1('node', index));
-                            index += 2;
-                        }
-                    }
-                    index--;
-                    nodesToRemove.push(node);
-                } else if (!node.nodeValue.trim()) {
-                    nodesToRemove.push(node);
-                    index--;
-                }
-            }
-        }
-        for (const n of nodesToRemove) {
-            n.parentNode.removeChild(n);
-        }
-        for (const a of attributesToRemove) {
-            a.ownerElement.removeAttribute(a.name);
-        }
-    }
-    _getTemplateHtml(strings) {
-        const parts = [];
-        for (let i = 0; i < strings.length; i++) {
-            parts.push(strings[i]);
-            if (i < strings.length - 1) {
-                parts.push(exprMarker$1);
-            }
-        }
-        return parts.join('');
-    }
-}
-class Part$1 {
-    constructor(instance) {
-        this.instance = instance;
-    }
-    _getValue(value) {
-        if (typeof value === 'function') {
-            try {
-                value = value(this);
-            } catch (e) {
-                console.error(e);
-                return;
-            }
-        }
-        if (value === null) {
-            return undefined;
-        }
-        return value;
-    }
-}
-class AttributePart$1 extends Part$1 {
-    constructor(instance, element, name, strings) {
-        super(instance);
-        console.assert(element.nodeType === Node.ELEMENT_NODE);
-        this.element = element;
-        this.name = name;
-        this.strings = strings;
-    }
-    setValue(values) {
-        const strings = this.strings;
-        let text = '';
-        for (let i = 0; i < strings.length; i++) {
-            text += strings[i];
-            if (i < strings.length - 1) {
-                const v = this._getValue(values[i]);
-                if (v && typeof v !== 'string' && v[Symbol.iterator]) {
-                    for (const t of v) {
-                        text += t;
-                    }
-                } else {
-                    text += v;
-                }
-            }
-        }
-        this.element.setAttribute(this.name, text);
-    }
-    get size() {
-        return this.strings.length - 1;
-    }
-}
-class NodePart$1 extends Part$1 {
-    constructor(instance, startNode, endNode) {
-        super(instance);
-        this.startNode = startNode;
-        this.endNode = endNode;
-    }
-    setValue(value) {
-        value = this._getValue(value);
-        if (value instanceof Node) {
-            this._previousValue = this._setNodeValue(value);
-        } else if (value instanceof TemplateResult$1) {
-            this._previousValue = this._setTemplateResultValue(value);
-        } else if (value && value.then !== undefined) {
-            value.then(v => {
-                if (this._previousValue === value) {
-                    this.setValue(v);
-                }
-            });
-            this._previousValue = value;
-        } else if (value && typeof value !== 'string' && value[Symbol.iterator]) {
-            this._previousValue = this._setIterableValue(value);
-        } else if (this.startNode.nextSibling === this.endNode.previousSibling && this.startNode.nextSibling.nodeType === Node.TEXT_NODE) {
-            this.startNode.nextSibling.textContent = value;
-            this._previousValue = value;
-        } else {
-            this._previousValue = this._setTextValue(value);
-        }
-    }
-    _insertNodeBeforeEndNode(node) {
-        this.endNode.parentNode.insertBefore(node, this.endNode);
-    }
-    _setNodeValue(value) {
-        this.clear();
-        this._insertNodeBeforeEndNode(value);
-        return value;
-    }
-    _setTextValue(value) {
-        return this._setNodeValue(new Text(value));
-    }
-    _setTemplateResultValue(value) {
-        let instance;
-        if (this._previousValue && this._previousValue._template === value.template) {
-            instance = this._previousValue;
-        } else {
-            instance = this.instance._createInstance(value.template);
-            this._setNodeValue(instance._clone());
-        }
-        instance.update(value.values);
-        return instance;
-    }
-    _setIterableValue(value) {
-        let itemStart = this.startNode;
-        let itemEnd;
-        const values = value[Symbol.iterator]();
-        const previousParts = Array.isArray(this._previousValue) ? this._previousValue : undefined;
-        let previousPartsIndex = 0;
-        const itemParts = [];
-        let current = values.next();
-        let next = values.next();
-        if (current.done) {
-            this.clear();
-        }
-        while (!current.done) {
-            let itemPart;
-            if (previousParts !== undefined && previousPartsIndex < previousParts.length) {
-                itemPart = previousParts[previousPartsIndex++];
-                if (next.done && itemPart.endNode !== this.endNode) {
-                    this.clear(itemPart.endNode.previousSibling);
-                    itemPart.endNode = this.endNode;
-                }
-                itemEnd = itemPart.endNode;
-            } else {
-                if (next.done) {
-                    itemEnd = this.endNode;
-                } else {
-                    itemEnd = new Text();
-                    this._insertNodeBeforeEndNode(itemEnd);
-                }
-                itemPart = new NodePart$1(this.instance, itemStart, itemEnd);
-            }
-            itemPart.setValue(current.value);
-            itemParts.push(itemPart);
-            current = next;
-            next = values.next();
-            itemStart = itemEnd;
-        }
-        return itemParts;
-    }
-    clear(startNode = this.startNode) {
-        this._previousValue = undefined;
-        let node = startNode.nextSibling;
-        while (node !== null && node !== this.endNode) {
-            let next = node.nextSibling;
-            node.parentNode.removeChild(node);
-            node = next;
-        }
-    }
-}
-class TemplateInstance$1 {
-    constructor(template) {
-        this._parts = [];
-        this._template = template;
-    }
-    get template() {
-        return this._template;
-    }
-    update(values) {
-        let valueIndex = 0;
-        for (const part of this._parts) {
-            if (part.size === undefined) {
-                part.setValue(values[valueIndex++]);
-            } else {
-                part.setValue(values.slice(valueIndex, valueIndex + part.size));
-                valueIndex += part.size;
-            }
-        }
-    }
-    _clone() {
-        const fragment = document.importNode(this._template.element.content, true);
-        if (this._template.parts.length > 0) {
-            const walker = document.createTreeWalker(fragment, NodeFilter.SHOW_ELEMENT | NodeFilter.SHOW_TEXT);
-            const parts = this._template.parts;
-            let index = 0;
-            let partIndex = 0;
-            let templatePart = parts[0];
-            let node = walker.nextNode();
-            while (node != null && partIndex < parts.length) {
-                if (index === templatePart.index) {
-                    this._parts.push(this._createPart(templatePart, node));
-                    templatePart = parts[++partIndex];
-                } else {
-                    index++;
-                    node = walker.nextNode();
-                }
-            }
-        }
-        return fragment;
-    }
-    _createPart(templatePart, node) {
-        if (templatePart.type === 'attribute') {
-            return new AttributePart$1(this, node, templatePart.name, templatePart.strings);
-        } else if (templatePart.type === 'node') {
-            return new NodePart$1(this, node, node.nextSibling);
-        } else {
-            throw new Error(`unknown part type: ${templatePart.type}`);
-        }
-    }
-    _createInstance(template) {
-        return new TemplateInstance$1(template);
-    }
-}
-window.html = window.html || html$2;
-window.Backed = window.Backed || {};
-window.Backed.Renderer = window.Backed.Renderer || render$2;
-var litMixin$2 = base => {
-    return class LitMixin extends base {
-        get propertyStore() {
-            return window.Backed.PropertyStore;
-        }
-        constructor(options = {}) {
-            super(options);
-            this.attachShadow({ mode: 'open' });
-            if (!this._isValidRenderer(this.render)) throw 'Invalid renderer!';
-            if (this.render) render$2(this.render(), this.shadowRoot);else throw 'Missing render method!';
-        }
-        _isValidRenderer(renderer) {
-            if (!renderer) {
-                return;
-            }
-            return String(renderer).includes('return html`');
-        }
-    };
-};
-
-window.Backed = window.Backed || {};
-window.Backed.PropertyStore = window.Backed.PropertyStore || new Map();
-const render$3 = window.Backed.Renderer;
-var propertyMixin$2 = base => {
-  return class PropertyMixin extends base {
-    constructor(options = {}) {
-      super(options);
-      this.properties = options.properties;
-    }
-    connectedCallback() {
-      if (this.properties) {
-        for (const entry of Object.entries(this.properties)) {
-          const { observer, reflect, renderer } = entry[1];
-          if (observer || reflect || renderer) {
-            if (renderer && !render$3) {
-              console.warn('Renderer undefined');
-            }
-            this.defineProperty(entry[0], entry[1]);
-          }
-        }
-      }
-    }
-    defineProperty(property = null, { strict = false, observer, reflect = false, renderer, value }) {
-      Object.defineProperty(this, property, {
-        set(value) {
-          if (value === this[`___${property}`]) return;
-          this[`___${property}`] = value;
-          if (reflect) {
-            if (value) this.setAttributte(property, String(value));else this.removeAttribute(property);
-          }
-          if (observer) {
-            if (observer in this) this[observer]();else console.warn(`observer::${observer} undefined`);
-          }
-          if (renderer) {
-            if (renderer in this) render$3(this[renderer](), this.shadowRoot);else console.warn(`renderer::${renderer} undefined`);
-          }
-        },
-        get() {
-          return this[`___${property}`];
-        },
-        configurable: strict ? false : true
-      });
-      const attr = this.getAttribute(property);
-      this[property] = attr || this.hasAttribute(property) || value;
-    }
-  };
-};
-
-class CustomAppLayout extends litMixin$2(propertyMixin$2(HTMLElement)) {
+class CustomAppLayout extends litMixin$1(propertyMixin$1(HTMLElement)) {
   constructor(options = { properties: {} }) {
     const properties = {
       firstRender: { value: true, renderer: 'render' },
@@ -649,6 +253,54 @@ customElements.define('custom-app-layout', CustomAppLayout);
   customElements.define('custom-header', CustomHeader);
 })();
 
+window.Backed = window.Backed || {};
+window.Backed.PropertyStore = window.Backed.PropertyStore || new Map();
+const render$2 = window.Backed.Renderer;
+var propertyMixin$2 = base => {
+  return class PropertyMixin extends base {
+    constructor(options = {}) {
+      super(options);
+      this.properties = options.properties;
+    }
+    connectedCallback() {
+      if (this.properties) {
+        for (const entry of Object.entries(this.properties)) {
+          const { observer, reflect, renderer } = entry[1];
+          if (observer || reflect || renderer) {
+            if (renderer && !render$2) {
+              console.warn('Renderer undefined');
+            }
+            this.defineProperty(entry[0], entry[1]);
+          }
+        }
+      }
+    }
+    defineProperty(property = null, { strict = false, observer, reflect = false, renderer, value }) {
+      Object.defineProperty(this, property, {
+        set(value) {
+          if (value === this[`___${property}`]) return;
+          this[`___${property}`] = value;
+          if (reflect) {
+            if (value) this.setAttributte(property, String(value));else this.removeAttribute(property);
+          }
+          if (observer) {
+            if (observer in this) this[observer]();else console.warn(`observer::${observer} undefined`);
+          }
+          if (renderer) {
+            if (renderer in this) render$2(this[renderer](), this.shadowRoot);else console.warn(`renderer::${renderer} undefined`);
+          }
+        },
+        get() {
+          return this[`___${property}`];
+        },
+        configurable: strict ? false : true
+      });
+      const attr = this.getAttribute(property);
+      this[property] = attr || this.hasAttribute(property) || value;
+    }
+  };
+};
+
 var CustomSelectMixin = (base => {
   return class CustomSelectMixin extends propertyMixin$2(base) {
     static get observedAttributes() {
@@ -749,7 +401,7 @@ var CustomSelectMixin = (base => {
   };
 });
 
-class CustomPages extends litMixin$2(CustomSelectMixin(HTMLElement)) {
+class CustomPages extends litMixin$1(CustomSelectMixin(HTMLElement)) {
   constructor() {
     super();
   }
@@ -908,5 +560,7 @@ class CustomDocs extends litMixin$1(propertyMixin$1(HTMLElement)) {
 }
 var customDocs = customElements.define('custom-docs', CustomDocs);
 
-export default customDocs;
+return customDocs;
+
+}());
 //# sourceMappingURL=custom-docs.js.map

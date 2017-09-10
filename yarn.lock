@@ -113,8 +113,8 @@ core-js@^2.4.0:
   resolved "https://registry.yarnpkg.com/core-js/-/core-js-2.5.1.tgz#ae6874dc66937789b80754ff5428df66819ca50b"
 
 custom-app-layout@next:
-  version "0.9.0-preview.1"
-  resolved "https://registry.yarnpkg.com/custom-app-layout/-/custom-app-layout-0.9.0-preview.1.tgz#8adfaaafb252dc04d0f4f8fd7f646814fe142c46"
+  version "0.9.0-preview.2"
+  resolved "https://registry.yarnpkg.com/custom-app-layout/-/custom-app-layout-0.9.0-preview.2.tgz#e85ad6d2af7aad1349fa590babd307e239feb776"
   dependencies:
     backed "^0.9.0-preview.2"
 
